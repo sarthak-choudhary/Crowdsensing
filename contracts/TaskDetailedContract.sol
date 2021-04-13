@@ -1,7 +1,8 @@
-pragma solidity ^0.6.6;
+pragma solidity >=0.5.0 <0.6.0;
 
 contract TaskDetailedContract {
     struct Reservation {
+        uint id;
         address worker_address;
         uint duration;
         uint distance;
@@ -10,6 +11,7 @@ contract TaskDetailedContract {
     }
     
     struct Solution {
+        uint id;
         address worker_address;
         uint duration;
         uint data;
@@ -49,7 +51,9 @@ contract TaskDetailedContract {
         solutionsCount = 0;
     }
     
-    function addReservation() external {
-        
+    function addReservation(address _worker_address, uint _duration, uint _distance, uint _reputation, uint _quality_of_information) external returns (uint) {
+        reservations.push(Reservation(reservationsCount, _worker_address, _duration, _distance, _reputation, _quality_of_information));
+        return reservationsCount++;
     }
+    
 }
