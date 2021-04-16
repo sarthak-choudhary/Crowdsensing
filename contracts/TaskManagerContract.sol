@@ -1,10 +1,7 @@
 pragma solidity >=0.5.0 <0.6.0;
+
 import "./TaskDetailedContract.sol";
 
-contract UserInterface {
-    function isUser(address user_address) external view returns (bool isValid);
-    function getUser(address user_address) external view returns (address user_ad, uint user_rep);
-}
 
 contract TaskManagerContract {
     enum Status { PENDING, COMPLETED, CANCELED }
@@ -56,6 +53,7 @@ contract TaskManagerContract {
     }
     
     function addTask(uint duration, string memory data_type, uint min_reputation, uint _lat, uint _long, uint deposit, uint total_solutions, uint similarity_tolerance) onlyUsers public payable returns (uint) {
+        require(deposit == msg.value);
         address user_ad;
         uint user_rep;
         
@@ -65,8 +63,12 @@ contract TaskManagerContract {
         Task memory task = Task(taskCount, user_ad, user_rep, Status.PENDING, duration, data_type, _location, min_reputation, deposit, total_solutions,(5 * deposit) / (total_solutions * 10), similarity_tolerance, address(0));
         TaskDetailedContract tdc = new TaskDetailedContract(task.owner_address, task.owner_reputation, task.duration, task.similarity_tolerance, task.min_payment, _lat, _long, task.data_type);
         
+        tdc.setDeposit(deposit);
         task.TDC_address = address(tdc);
         tasks.push(task);
+        
+        address payable detailed = address(uint160(task.TDC_address));
+        detailed.transfer(msg.value);
         
         
         return taskCount++;
@@ -91,7 +93,7 @@ contract TaskManagerContract {
     }
 
 
-    function addReservation(string memory data_type, uint submission_time, uint distance) onlyUsers public {
+    function addReservation(string memory data_type, uint submission_time, uint distance, uint duration) onlyUsers public returns (uint) {
         uint max_QOI = 0;
         uint task_id ;
         uint user_rep;
@@ -109,8 +111,24 @@ contract TaskManagerContract {
         }
         
         TaskDetailedContract desired_task = TaskDetailedContract(tasks[task_id].TDC_address);
-        desired_task.addReservation
+        desired_task.addReservation(msg.sender, duration, distance, user_rep, max_QOI);
         
-        
+        return max_QOI;
+    }
+    
+    function evaluateReservations(uint task_id) validTask(task_id) isRequestor(task_id) public {
+        TaskDetailedContract desired_task = TaskDetailedContract(tasks[task_id].TDC_address);
+        desired_task.evaluateReservations();
+    }
+    
+    function addSolution(uint task_id, uint data) validTask(task_id) onlyUsers() public {
+        TaskDetailedContract desired_task = TaskDetailedContract(tasks[task_id].TDC_address);
+        desired_task.addSolution(msg.sender, data);
+    }
+    
+    function evaluateSolution(uint task_id) validTask(task_id) isRequestor(task_id) public {
+        TaskDetailedContract desired_task = TaskDetailedContract(tasks[task_id].TDC_address);
+        uint total_quality = desired_task.evaluateSolutions();
+        desired_task.makePayments(total_quality);
     }
 }

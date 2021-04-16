@@ -1,5 +1,4 @@
-pragma solidity ^0.6.6;
-
+pragma solidity >=0.5.0 <0.6.0;
 contract UserManagerContract {
     enum types { REQUESTER, WORKER}
     
@@ -21,11 +20,11 @@ contract UserManagerContract {
     
     constructor() public {
         userCounter = 0;
-        default_reputation = 1;
+        default_reputation = 100;
     }
     
     
-    receive() external payable {
+    function() external payable {
         
     }
     
@@ -71,7 +70,20 @@ contract UserManagerContract {
         
     }
     
-    function updateReputation(uint user_id, uint new_reputation) external {
+    function increaseAccepted(address user_address) external {
+        users[UserToId[user_address]].accepted_requests++;
+        users[UserToId[user_address]].total_requests++;
+    }
+    
+    function increaseCancelled(address user_address) external {
+        users[UserToId[user_address]].cancelled_requests++;
+        users[UserToId[user_address]].total_requests++;
+    }
+    
+    function updateReputation(address user_address, uint factor) external {
+        require(factor <= 100);
+        uint user_id = UserToId[user_address];
+        uint new_reputation = (factor * users[user_id].reputation/100) * 100 + ((100 - factor) * users[user_id].accepted_requests)/users[user_id].total_requests;
         users[user_id].reputation = new_reputation;
     }
 }
