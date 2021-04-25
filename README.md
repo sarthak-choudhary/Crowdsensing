@@ -1,3 +1,3 @@
 # CrowdSensing
 
-Basic implementation of crwodsensing framework in solidity.
+Basic implementation of crowdsensing framework in solidity.
